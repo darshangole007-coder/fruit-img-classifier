@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fruit Classifier</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐾 fruit Classifier</h1>
+            <p>Powered by MobileNetV2</p>
+        </header>
+
+        <main class="card">
+            <div class="upload-section">
+                <input type="file" id="fileInput" accept="image/*" hidden>
+                <label for="fileInput" class="drop-zone" id="dropZone">
+                    <span class="drop-zone-prompt">Drop image here or click to upload</span>
+                    <img id="imagePreview" src="" alt="Preview" style="display:none;">
+                </label>
+            </div>
+
+            <button id="predictBtn" class="btn" disabled>Identify Fruit</button>
+
+            <div id="result" class="result-area" style="display:none;">
+                <div class="divider"></div>
+                <div class="prediction-info">
+                    <h2 id="fruitName">Fruit Name</h2>
+                    <div class="progress-container">
+                        <div id="confidenceBar" class="progress-bar"></div>
+                    </div>
+                    <p id="confidenceText">Confidence: 0%</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const imagePreview = document.getElementById('imagePreview');
+        const predictBtn = document.getElementById('predictBtn');
+        const resultArea = document.getElementById('result');
+
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    document.querySelector('.drop-zone-prompt').style.display = 'none';
+                    predictBtn.disabled = false;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        predictBtn.addEventListener('click', async () => {
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+
+            predictBtn.innerText = 'Analyzing...';
+            predictBtn.disabled = true;
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                resultArea.style.display = 'block';
+                document.getElementById('fruitName').innerText = data.fruit;
+                document.getElementById('confidenceText').innerText = `Confidence: ${data.confidence}%`;
+                document.getElementById('confidenceBar').style.width = data.confidence + '%';
+                
+            } catch (error) {
+                alert('Error classifying image');
+            } finally {
+                predictBtn.innerText = 'Identify fruit';
+                predictBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
